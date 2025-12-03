@@ -1,4 +1,4 @@
-// ------------------------- UTILIDADES -------------------------
+// ---------------------------- UTILIDADES ----------------------------
 
 function mod(n, m) {
     return ((n % m) + m) % m;
@@ -17,37 +17,67 @@ function inversoModular(a, m) {
     return null;
 }
 
-// ---------------------- MANEJO DEL MENSAJE ----------------------
+// ---------------------- PROCESAR MENSAJE SIN ESPACIOS ----------------------
 
-function obtenerNumeros(msg) {
-    return msg
-        .trim()
-        .split(/\s+/)
-        .map(n => parseInt(n))
-        .filter(n => !isNaN(n));
-}
+function separarPrimos(cadena) {
+    let nums = [];
+    let actual = "";
 
-function generarPares(arr) {
-    if (arr.length % 2 === 1) arr.push(0); // Relleno si hay impar
-    let pares = [];
-    for (let i = 0; i < arr.length; i += 2) {
-        pares.push([arr[i], arr[i + 1]]);
+    for (let char of cadena) {
+        if (!isNaN(char)) {
+            actual += char;
+        } else {
+            actual = "";
+        }
+
+        // Si llega a 2 o más dígitos, ya puede ser un primo
+        if (actual.length >= 2) {
+            nums.push(parseInt(actual));
+            actual = "";
+        }
     }
-    return pares;
+
+    return nums;
 }
 
-// ---------------------- ENCRIPTAR ----------------------
+// Si el usuario escribe "23571113"
+// se convierte en [23, 57, 11, 13]
+function convertirCadenaANumeros(cadena) {
+    let arr = [];
+    let buffer = "";
+
+    for (let c of cadena) {
+        if (!isNaN(c)) {
+            buffer += c;
+            if (buffer.length === 2) {
+                arr.push(parseInt(buffer));
+                buffer = "";
+            }
+        }
+    }
+
+    if (buffer.length === 1) arr.push(parseInt(buffer)); // número incompleto final
+    return arr;
+}
+
+// ------------------------------ ENCRIPTAR ------------------------------
 
 function encriptar() {
-    let msg = document.getElementById("mensaje").value;
-    let numeros = obtenerNumeros(msg);
+    let msg = document.getElementById("mensaje").value.trim();
 
-    if (numeros.length === 0) {
-        alert("Escribe números separados por espacios (por ejemplo: 2 3 5 7)");
+    if (msg.length === 0) {
+        alert("Escribe números sin espacios (ej: 23571113)");
         return;
     }
 
-    // Módulo = máximo valor encontrado + 1
+    let numeros = convertirCadenaANumeros(msg);
+
+    if (numeros.length === 0) {
+        alert("Ingresa números válidos.");
+        return;
+    }
+
+    // Módulo = máximo número encontrado + 1
     let M = Math.max(...numeros) + 1;
 
     let a = parseInt(document.getElementById("k11").value);
@@ -56,24 +86,31 @@ function encriptar() {
     let d = parseInt(document.getElementById("k22").value);
 
     let det = a * d - b * c;
+
     if (gcd(det, M) !== 1) {
         alert("El determinante NO es invertible mod " + M);
         return;
     }
 
-    let pares = generarPares(numeros);
+    // Crear pares
+    if (numeros.length % 2 === 1) numeros.push(0);
+
     let resultado = [];
 
-    for (let [x, y] of pares) {
+    for (let i = 0; i < numeros.length; i += 2) {
+        let x = numeros[i];
+        let y = numeros[i + 1];
+
         let e1 = mod(a * x + b * y, M);
         let e2 = mod(c * x + d * y, M);
+
         resultado.push(e1, e2);
     }
 
     document.getElementById("resultado").innerText = resultado.join(" ");
 }
 
-// ---------------------- DESENCRIPTAR ----------------------
+// ----------------------------- DESENCRIPTAR -----------------------------
 
 function desencriptar() {
     let msg = document.getElementById("resultado").innerText.trim();
@@ -82,7 +119,7 @@ function desencriptar() {
         return;
     }
 
-    let numeros = obtenerNumeros(msg);
+    let numeros = msg.split(" ").map(n => parseInt(n));
 
     let M = Math.max(...numeros) + 1;
 
@@ -95,7 +132,7 @@ function desencriptar() {
     let detInv = inversoModular(det, M);
 
     if (detInv === null) {
-        alert("La matriz clave NO es invertible en mod " + M);
+        alert("La matriz NO es invertible mod " + M);
         return;
     }
 
@@ -105,19 +142,24 @@ function desencriptar() {
     let ci = mod(detInv * -c, M);
     let di = mod(detInv * a, M);
 
-    let pares = generarPares(numeros);
     let resultado = [];
 
-    for (let [x, y] of pares) {
+    for (let i = 0; i < numeros.length; i += 2) {
+        let x = numeros[i];
+        let y = numeros[i + 1];
+
         let r1 = mod(ai * x + bi * y, M);
         let r2 = mod(ci * x + di * y, M);
+
         resultado.push(r1, r2);
     }
 
-    document.getElementById("resultadoDes").innerText = resultado.join(" ");
+    // Mostrar desencriptado sin espacios (23 57 11 → 235711)
+    document.getElementById("resultadoDes").innerText =
+        resultado.join("");
 }
 
-// ---------------------- EVENTOS ----------------------
+// ----------------------------- EVENTOS -----------------------------
 
 document.getElementById("encriptar").addEventListener("click", encriptar);
 document.getElementById("desencriptar").addEventListener("click", desencriptar);
